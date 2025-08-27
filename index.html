@@ -761,48 +761,67 @@
         });
 
         // Gestion du formulaire Formspree
-        const contactForm = document.getElementById('contactForm');
-        const alertBox = document.getElementById('alertBox');
+const contactForm = document.getElementById('contactForm');
+const alertBox = document.getElementById('alertBox');
+
+if (contactForm) {
+    contactForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
         
-        if (contactForm) {
-            contactForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const name = document.getElementById('name').value;
-                const email = document.getElementById('email').value;
-                const message = document.getElementById('message').value;
-                
-                if (name && email && message) {
-                    // Afficher un message de chargement
-                    showAlert('Votre message est en cours d\'envoi...', 'info');
-                    
-                    // Envoyer le formulaire via Formspree
-                    fetch(contactForm.action, {
-                        method: 'POST',
-                        body: new FormData(contactForm),
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    })
-                    .then(response => {
-                        if (response.ok) {
-                            showAlert('Merci pour votre message ! Je vous répondrai très rapidement.', 'success');
-                            contactForm.reset();
-                        } else {
-                            throw new Error('Erreur lors de l\'envoi du message');
-                        }
-                    })
-                    .catch(error => {
-                        showAlert('Une erreur s\'est produite. Veuillez réessayer ou me contacter directement par email.', 'error');
-                    });
-                } else {
-                    showAlert('Veuillez remplir tous les champs du formulaire.', 'error');
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        
+        // Désactiver le bouton pendant l'envoi
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Envoi en cours...';
+        
+        // Afficher un message de chargement
+        showAlert('Votre message est en cours d\'envoi...', 'info');
+        
+        try {
+            const formData = new FormData(this);
+            
+            const response = await fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
                 }
             });
+            
+            if (response.ok) {
+                showAlert('Merci pour votre message ! Je vous répondrai très rapidement.', 'success');
+                this.reset();
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erreur lors de l\'envoi du message');
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            showAlert('Une erreur s\'est produite. Veuillez réessayer ou me contacter directement par email.', 'error');
+        } finally {
+            // Réactiver le bouton
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
         }
-        
-        // Fonction pour afficher les alertes
-        function showAlert(message, type) {
+    });
+}
+
+// Fonction pour afficher les alertes
+function showAlert(message, type) {
+    alertBox.innerHTML = `
+        <div class="alert alert-${type}">
+            <span>${message}</span>
+            <button onclick="this.parentElement.style.display='none'">×</button>
+        </div>
+    `;
+    alertBox.style.display = 'block';
+    
+    // Masquer automatiquement après 5 secondes
+    setTimeout(() => {
+        alertBox.style.display = 'none';
+    }, 5000);
+}
             alertBox.innerHTML = `
                 <div class="alert alert-${type}">
                     ${message}
@@ -814,7 +833,7 @@
             setTimeout(() => {
                 alertBox.style.display = 'none';
             }, 5000);
-        }
+        
         
         // Instructions pour Formspree
         console.log("Pour configurer Formspree:");
